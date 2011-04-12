@@ -4,7 +4,7 @@ roslib.load_manifest("unfolding_smach")
 import rospy
 import StanceUtils
 import PrimitiveUtils
-import GripUtils
+from pr2_simple_arm_motions import GripUtils
 from image_processor.srv import *
 from geometry_msgs.msg import PointStamped
 from web_api_srvs.srv import *
@@ -12,7 +12,7 @@ from numpy import *
 import sys
 from smach import State, StateMachine
 import smach_ros
-from ArmMotionStates import *
+from pr2_simple_arm_motions.ArmMotionStates import *
 
 #Initial params. Note that triangle_length, towel_width, and towel_height will be overridden once it has detected the towel
 TABLE_HEIGHT = 0.770

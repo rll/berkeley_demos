@@ -4,7 +4,7 @@ roslib.load_manifest("unfolding_smach")
 import rospy
 import StanceUtils
 import PrimitiveUtils
-import GripUtils
+from pr2_simple_arm_motions import GripUtils
 from image_processor.srv import *
 from geometry_msgs.msg import PointStamped
 from geometry_msgs.msg import PoseStamped
@@ -12,7 +12,7 @@ from numpy import *
 import sys
 from smach import State, StateMachine
 import smach_ros
-from SmachUtils import *
+from smach_utils.SmachUtils import *
 import tf
 import actionlib
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal

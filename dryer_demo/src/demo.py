@@ -4,7 +4,7 @@ roslib.load_manifest("dryer_demo")
 import rospy
 import StanceUtils
 import PrimitiveUtils
-import GripUtils
+from pr2_simple_arm_motions import GripUtils
 import DryerNavigationUtils
 from image_processor.srv import ProcessStereo
 from geometry_msgs.msg import PointStamped
@@ -13,11 +13,11 @@ import sys
 from smach.state import State
 from smach.state_machine import StateMachine
 #import smach_ros
-from SmachUtils import *
+from smach_utils.SmachUtils import *
 import dryer_move
 from cloth_manipulator import ClothTracker
 from cloth_state_estimation.srv import KillMe
-import RosUtils
+from rll_utils import RosUtils
 import tf
 import cloth_motions
 import cloth_manipulator

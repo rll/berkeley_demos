@@ -2,7 +2,7 @@
 import roslib
 roslib.load_manifest("unfolding_smach")
 import rospy
-import GripUtils
+from pr2_simple_arm_motions import GripUtils
 from image_processor.srv import *
 from geometry_msgs.msg import PointStamped
 from geometry_msgs.msg import PoseStamped

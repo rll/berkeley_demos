@@ -4,7 +4,7 @@ roslib.load_manifest("unfolding")
 import rospy
 import StanceUtils
 import PrimitiveUtils
-import GripUtils
+from pr2_simple_arm_motions import GripUtils
 from image_processor.srv import *
 from geometry_msgs.msg import PointStamped
 from numpy import *
@@ -12,7 +12,7 @@ import sys
 from dynamic_reconfigure.client import Client as ReconfigureClient
 from smach import State, StateMachine
 import smach_ros
-from ArmMotionStates import Sweep,DEFAULT_OUTCOMES,SUCCESS,FAILURE,StateMachineAddition,NestedStateMachine,SuccessFailureState
+from pr2_simple_arm_motions.ArmMotionStates import Sweep,DEFAULT_OUTCOMES,SUCCESS,FAILURE,StateMachineAddition,NestedStateMachine,SuccessFailureState
 
 TABLE_HEIGHT = 0.770 #was 0.78
 TABLE_WIDTH = 0.98
