@@ -7,6 +7,7 @@ import tf
 
 """
 Broadcasts all table-related frames for the PR2 unfolding demo(s)
+Assumes a parameter "table_height" has been set
 """
 
 if __name__ == '__main__':

@@ -14,14 +14,11 @@ import smach_ros
 from smach_utils.SmachUtils import *
 
 #Initial params. Note that triangle_length, towel_width, and towel_height will be overridden once it has detected the towel
-TABLE_HEIGHT = 0.8 #was 0.77
-TABLE_WIDTH = 0.98
-STRETCH_FACTOR = 1.00
-TOWEL_STRETCH_FACTOR = 0.95
-triangle_length = 0.8
-towel_width = 0.6
-towel_height = 0.2
-MAX_FLIPS = 1
+TABLE_WIDTH = 0.98      #Width of the table used. Can (and should) be inferred visually, but as we only have one table
+                        #we keep it as is.
+towel_width = 0.6       #An arbitrary guess at the width of the towel. Just used as a seed -- no need to be correct
+towel_height = 0.2      #Same for height
+MAX_FLIPS = 1           #Number of times to flip the towel
 
 (TWITTER,CONSOLE) = range(2)
 MODE = CONSOLE
@@ -378,21 +375,6 @@ class Fold2(SuccessFailureState):
             return FAILURE
         GripUtils.recall_arm("r")
         
-        """
-        if not GripUtils.go_to_multi (x_l=ctr_ml_x+0.03,y_l=ctr_ml_y+0.06,z_l=z+0.01,roll_l=-pi/2,pitch_l=pi/4,yaw_l=-pi/2,grip_l=False,frame_l=frame
-                                        ,x_r=ctr_mr_x+0.03,y_r=ctr_mr_y-0.03,z_r=z+0.01,roll_r= pi/2,pitch_r=pi/4,yaw_r= pi/2,grip_r=False,frame_r=frame
-                                        ,dur=3.0):
-            return FAILURE
-        if not GripUtils.go_to_multi (x_l=ctr_ml_x+0.03,y_l=ctr_ml_y-0.05,z_l=z+0.01,roll_l=-pi/2,pitch_l=pi/4,yaw_l=-pi/2,grip_l=False,frame_l=frame
-                                        ,x_r=ctr_mr_x+0.03,y_r=ctr_mr_y+0.05,z_r=z+0.01,roll_r= pi/2,pitch_r=pi/4,yaw_r= pi/2,grip_r=False,frame_r=frame
-                                        ,dur=3.0):
-            return FAILURE
-        GripUtils.close_gripper("b")
-        if not GripUtils.go_to_multi (x_l=ctr_ml_x+0.03,y_l=ctr_ml_y-0.05,z_l=z+0.1,roll_l=-pi/2,pitch_l=pi/4,yaw_l=-pi/2,grip_l=True,frame_l=frame
-                                        ,x_r=ctr_mr_x+0.03,y_r=ctr_mr_y+0.05,z_r=z+0.1,roll_r= pi/2,pitch_r=pi/4,yaw_r= pi/2,grip_r=True,frame_r=frame
-                                        ,dur=3.0):
-            return FAILURE
-        """
         return SUCCESS
 
 class GenericUserData:
