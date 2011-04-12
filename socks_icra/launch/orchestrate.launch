@@ -1,0 +1,14 @@
+<launch>
+
+    <node pkg="pr2_simple_arm_motions" type="gripper_tip_frame.py" name="gripper_tip_broadcaster_node" output="screen" />
+    <include file="$(find joint_states_listener)/launch/joint_states_listener.launch" />
+    <node pkg="pr2_simple_motions_apps" type="stance_server.py" name="stance_server" output="screen">
+        <param name="initial_stances" value="socks" />
+    </node>
+    <node pkg="pr2_simple_motions_apps" type="primitive_server.py" name="primitive_server" output="screen">
+        <param name="initial_primitives" value="socks" />
+    </node>
+    
+
+    <include file="$(find pr2_mannequin_mode)/pr2_mannequin_mode.launch"/>
+</launch>

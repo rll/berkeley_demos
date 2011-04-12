@@ -1,0 +1,15 @@
+<launch>
+  <include file="$(find pr2_machine)/$(env ROBOT).machine" /> 
+  <!-- Launch cloth_tracker -->
+  <node machine="pr2base" pkg="cloth_state_estimation" type="cloth_tracker" name="cloth_tracker" output="screen" respawn="true">
+      <param name="models_directory" value="$(find dryer_demo)/config/pants_demo"/>
+      <param name="output_directory_base" value="$(find cloth_state_estimation)/generated_data/tracking_runs"/>
+      <param name="target_pairs_file" value="$(find dryer_demo)/config/target_pairs.yaml"/>
+    </node>
+	<!-- Launch the table_height frame -->
+  <param name="table_height" value="0.780" />
+	<node machine="pr2base" pkg="pr2_simple_arm_motions" type="table_frame.py" name="table_frame_publisher" output="screen" />
+  <!-- Launch cloth_state_estimation vision -->
+  <include file="$(find cloth_state_estimation)/launch/vision.launch" />  
+
+</launch>

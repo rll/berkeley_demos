@@ -1,0 +1,4 @@
+<launch>
+    <node pkg="pr2_teleop" type="teleop_pr2" name="pr2_teleop" output="log" />
+    <node pkg="dryer_demo" type="testinput.py" name="testinput" output="screen" required="true" respawn="false" />
+</launch>

@@ -1,0 +1,20 @@
+<package>
+  <description brief="unfolding">
+
+     unfolding
+
+  </description>
+  <author>Stephen Miller</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/unfolding</url>
+  <depend package="pr2_simple_motions_apps"/>
+  <depend package="pr2_simple_arm_motions"/>
+  <depend package="image_processor"/>
+  <depend package="image_view" />
+  <depend package="geometry_msgs" />
+<!--  <depend package="web_api_srvs" /> -->
+
+</package>
+
+

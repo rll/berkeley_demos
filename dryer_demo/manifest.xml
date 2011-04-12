@@ -1,0 +1,26 @@
+<package>
+  <description brief="dryer_demo">
+
+     dryer_demo
+
+  </description>
+  <author>Stephen Miller</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/dryer_demo</url>
+  <depend package="rospy"/>
+  <depend package="tf"/>
+  <depend package="pr2_simple_motions_srvs"/>
+  <depend package="pr2_simple_arm_motions"/>
+  <depend package="pr2_simple_motions_apps" />
+  <depend package="geometry_msgs"/>
+  <depend package="visual_feedback_utils"/>
+  <depend package="image_processor"/>
+  <depend package="smach"/>
+  <depend package="smach_utils"/>
+  <depend package="dryer"/>
+  <depend package="cloth_state_estimation" />
+  <depend package="rll_utils" />
+</package>
+
+

@@ -1,0 +1,7 @@
+<launch>
+    <include file="$(find joint_states_listener)/launch/joint_states_listener.launch" />    
+    <param name="table_height" value="0.77"/>
+    <node pkg="pr2_simple_arm_motions" type="gripper_tip_frame.py" name="gripper_tip_broadcaster_node" output="screen" /> 
+    <node pkg="pr2_simple_arm_motions" type="grip_watcher.py" name="grip_watcher" output="screen"/>
+    <node pkg="pr2_simple_arm_motions" type="table_frame.py" name="table_frame_watcher" output="screen"/>
+</launch>

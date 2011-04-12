@@ -1,0 +1,19 @@
+shirt: 
+  left: 4
+  right: 9
+
+pants:
+  left: 3 
+  right: 4
+
+onesie:
+  left: 6
+  right: 9
+
+skirt:
+  left: 1
+  right: 2
+
+towel:
+  left: 1
+  right: 0

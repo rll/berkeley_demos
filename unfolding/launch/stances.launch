@@ -1,0 +1,10 @@
+<!-- Makes stances and primitives, and a configuration file for both. Configs are in pr2_simple_motion_apps/config/*_stances.yaml -->
+
+<launch>
+    <node pkg="pr2_simple_motions_apps" type="stance_server.py" name="stance_server" output="screen">
+        <param name="initial_stances" value="unfolding" />
+    </node>
+    <node pkg="pr2_simple_motions_apps" type="primitive_server.py" name="primitive_server" output="screen">
+        <param name="initial_primitives" value="unfolding" />
+    </node>
+</launch>

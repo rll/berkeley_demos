@@ -1,0 +1,7 @@
+<launch>
+    <node pkg="pr2_teleop" type="teleop_pr2" name="pr2_teleop" output="log">
+        <remap from="cmd_vel" to="base_controller/command" />
+        <rosparam file="$(find pr2_teleop)/config/teleop.yaml" command="load" />
+    </node>
+    <node pkg="dryer_demo" type="save_demo_locations.py" name="demo_location_saver" output="screen" required="true" respawn="false" />
+</launch>

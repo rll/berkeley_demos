@@ -1,0 +1,8 @@
+<!-- To run the unfolding demo, you must launch this first. Then run unfolding/src/demo.py -->
+
+<launch>
+    <include file="$(find unfolding)/launch/vision.launch" />
+    
+    <include file="$(find unfolding)/launch/stances.launch" />
+    <include file="$(find pr2_simple_motions_apps)/launch/move_all.launch" />
+</launch>

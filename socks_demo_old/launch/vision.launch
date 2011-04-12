@@ -1,0 +1,44 @@
+<launch>
+
+    <node pkg="stereo_click" type="mono_converter.py" name="mono_converter_node" output="screen">
+		<param name="input" value="processing_points" />
+        <param name="table_height" value="0.865" />
+		<param name="output" value="stereo_points_3d" />
+		<param name="output_frame" value="base_footprint" />
+	</node>
+	
+	<node pkg="stereo_click" type="stereo_converter.py" name="stereo_converter_node" output="screen">
+		<param name="input1" value="left_processing_points" />
+		<param name="input2" value="right_processing_points" />
+		<param name="output" value="stereo_points_3d" />
+		<param name="output_frame" value="base_footprint" />
+	</node>
+
+    <node name="cpp_node" pkg="image_processor" type="cpp_node" output="screen" />
+	
+    <node name="grab_point_node" pkg="image_processor" type="cpp_bridge_node.py" output="screen">
+        <param name="cpp_service" value="find_grip_point" />
+        <param name="mono_converter" value="mono_converter_node" />
+        <param name="stereo_converter" value="stereo_converter_node" />
+    </node>
+    <node name="is_inside_out_node" pkg="image_processor" type="cpp_bridge_node.py" output="screen">
+        <param name="cpp_service" value="is_inside_out" />
+        <param name="mono_converter" value="mono_converter_node" />
+        <param name="stereo_converter" value="stereo_converter_node" />
+        <param name="multi_exposure" value="true" />
+    </node>
+    
+    <node name="click_point_node" pkg="image_processor" type="click_node.py" output="screen">
+        <param name="mono_converter" value="mono_converter_node" />
+        <param name="stereo_converter" value="stereo_converter_node" />
+    </node>
+
+    
+    <node pkg="image_view" type="image_view" name="grasp_point_viewer">
+        <remap from="image" to="grab_point_node/annotated" />
+    </node>
+    
+    <node pkg="image_view" type="image_view" name="is_inside_out_viewer">
+        <remap from="image" to="is_inside_out_node/annotated" />
+    </node>
+</launch>

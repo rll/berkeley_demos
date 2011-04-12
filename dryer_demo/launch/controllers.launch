@@ -1,0 +1,23 @@
+<launch>
+	<!-- Launch the map frame -->
+	<include file="$(find pr2_simple_base_motions)/launch/pr2_2dnav_changed.launch" />
+
+	<!-- Launch the base mover with the map parameter set -->
+    <node machine="c1" pkg="pr2_simple_base_motions" type="base_move.py" name="base_mover" output="screen">
+        <param name="world_frame" value="map" />    
+    </node>
+
+    <!-- Launch the location server -->
+    <node machine="c1" pkg="pr2_simple_motions_apps" type="location_server.py" name="location_server" output="screen" />
+
+	<!-- Launch the dryer frame -->
+	<node pkg="dryer" type="dryer_frame.py" name="dryer_frame_publisher" output="screen">
+        <remap from="input_points" to="clicked_dryer_points" />
+    </node>
+
+    <!-- Launch the arm movers -->
+    <include file="$(find pr2_simple_arm_motions)/launch/move_arms.launch" />
+
+    <!-- Launch the torso mover -->
+    <include file="$(find pr2_simple_torso_motions)/launch/move_torso.launch" />
+</launch>

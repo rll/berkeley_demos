@@ -1,0 +1,8 @@
+<launch>
+    <node pkg="pr2_simple_motions_apps" type="stance_server.py" name="stance_server" output="screen">
+        <param name="initial_stances" value="socks" />
+    </node>
+    <node pkg="pr2_simple_motions_apps" type="primitive_server.py" name="primitive_server" output="screen">
+        <param name="initial_primitives" value="socks" />
+    </node>
+</launch>

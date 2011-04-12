@@ -1,0 +1,9 @@
+<launch>
+    <node pkg="pr2_teleop" type="teleop_pr2" name="pr2_teleop" output="log">
+        <remap from="cmd_vel" to="base_controller/command" />
+        <rosparam file="$(find pr2_teleop)/config/teleop.yaml" command="load" />
+    </node>
+
+    <include file="$(find dryer)/launch/set_dryer_points.launch" />
+    
+</launch>
