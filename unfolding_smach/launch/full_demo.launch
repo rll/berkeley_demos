@@ -1,9 +1,9 @@
 <launch>
 
-	<include file="$(find unfolding_smach)/launch/table.launch />
-	<include file="$(find pr2_simple_motions_apps)/launch/move_all.launch />
-	<include file="$(find unfolding_smach)/launch/stances.launch />
-	<include file="$(find unfolding_smach)/launch/vision.launch />
+	<include file="$(find unfolding_smach)/launch/table.launch" />
+	<include file="$(find pr2_simple_motions_apps)/launch/move_all.launch" />
+	<include file="$(find unfolding_smach)/launch/stances.launch" />
+	<include file="$(find unfolding_smach)/launch/vision.launch" />
 
 
 </launch>
