@@ -18,7 +18,7 @@
 
     <!-- Image Processor nodes for finding the furthest corners, center of towel clump, and fitting triangle and towel models -->
     <node pkg="image_processor" type="triangle_fitter_node.py" name="triangle_fitter_node" output="screen">
-      <env name="PYTHONPATH" value="$(find visual_feedback_utils)/../thirdparty/python-cvgreyc/cvgreyc/build/lib.linux-x86_64-2.6:$(optenv PYTHONPATH)"/>
+      <env name="PYTHONPATH" value="$(find clothing_models)/src/clothing_models:$(find visual_feedback_utils)/../thirdparty/python-cvgreyc/cvgreyc/build/lib.linux-x86_64-2.6:$(optenv PYTHONPATH)"/>
         <param name="mono_converter" value="mono_converter_node" />
         <param name="stereo_converter" value="stereo_converter_node" />
         <param name="threshold" value="100" />
