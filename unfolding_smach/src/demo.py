@@ -95,9 +95,9 @@ class PickupCorner(SuccessFailureState):
         userdata.cloth_height = None
         
         if arm == "l":
-            x_offset = -0.02 #was -0.01
+            x_offset = -0.005 #was -0.01
         else:
-            x_offset = -0.01
+            x_offset = -0.005
         if not GripUtils.grab_point(pt,roll=-pi/2,yaw=yaw,arm=arm,x_offset=x_offset):
             return FAILURE
         else:
