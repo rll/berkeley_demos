@@ -60,7 +60,7 @@ class PickupClump(SuccessFailureState):
         GripUtils.close_gripper("l")
         while not GripUtils.has_object("l") and not rospy.is_shutdown():
             z_offset -= 0.02
-            if(z_offset < 0):
+            if(z_offset < -0.02):
                 return FAILURE
             GripUtils.go_to_pt(pt,roll=pi/2,yaw=0,pitch=pi/2,arm="l",z_offset=z_offset,grip=False,dur=5.0)
             GripUtils.close_gripper("l")
@@ -185,9 +185,13 @@ class FoldTowel(NestedStateMachine):
     def __init__ (self,title=None,transitions=None):
         NestedStateMachine.__init__(self,title,transitions=transitions,outcomes=DEFAULT_OUTCOMES)
         self.add('Arms_Up', ArmsUp(grip=False), {SUCCESS:'Smooth_0', FAILURE:FAILURE})
-        self.add('Smooth_0', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH), {SUCCESS:'Detect_Towel',FAILURE:'Detect_Towel'})
-        self.add('Detect_Towel', DetectTowel(), {SUCCESS:'Execute_Fold',FAILURE:'Flip_Towel'})
-        self.add('Flip_Towel', FlipTowel(), {SUCCESS:'Smooth_0',FAILURE:'Flip_Towel'})
+        self.add('Smooth_0', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH),
+                 {SUCCESS:'Detect_Towel_0',FAILURE:'Detect_Towel_0'})
+        self.add('Detect_Towel_0', DetectTowel(), {SUCCESS:'Flip_Towel',FAILURE:'Flip_Towel'})
+        self.add('Flip_Towel', FlipTowel(), {SUCCESS:'Smooth_1',FAILURE:'Flip_Towel'})
+        self.add('Smooth_1', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH),
+                 {SUCCESS:'Detect_Towel_1',FAILURE:'Detect_Towel_1'})
+        self.add('Detect_Towel_1', DetectTowel(), {SUCCESS:'Execute_Fold',FAILURE:'Execute_Fold'})
         self.add('Execute_Fold', ExecuteFold(), {SUCCESS:SUCCESS, FAILURE:'Arms_Up'})
         
 class FlipTowel(NestedStateMachine):
@@ -212,21 +216,23 @@ class DetectTowel(SuccessFailureState):
         userdata.tr = resp.pts3d[2]
         userdata.br = resp.pts3d[3]
         score = resp.params[resp.param_names.index("score")]
-        to_flip = False
-        if abs(score) < 0.00003 or self.flip_count >= MAX_FLIPS:
-            to_flip = False
-            print "Decided not to flip"
-        else:
-            self.flip_count += 1
-            to_flip = True
-            print "Decided to flip"
-        print "Flip?"
-        flip = raw_input()
-        if(flip[0] == "t" or flip[0] == "T" or flip[0] == "y" or flip[0] == "Y"):
-            to_flip = True
-        else:
-            to_flip = False
-        return FAILURE if to_flip else SUCCESS
+        # to_flip = False
+        # if abs(score) < 0.00003 or self.flip_count >= MAX_FLIPS:
+        #     to_flip = False
+        #     print "Decided not to flip"
+        # else:
+        #     self.flip_count += 1
+        #     to_flip = True
+        #     print "Decided to flip"
+        
+        # print "Flip?"
+        # flip = raw_input()
+        # if(flip[0] == "t" or flip[0] == "T" or flip[0] == "y" or flip[0] == "Y"):
+        #     to_flip = True
+        # else:
+        #     to_flip = False
+        # return FAILURE if to_flip else SUCCESS
+        return SUCCESS
         
 class PickupTowel(SuccessFailureState):
     def __init__(self):
