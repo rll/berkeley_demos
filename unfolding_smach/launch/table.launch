@@ -1,7 +1,9 @@
 <launch>
-  <!-- Modifying for willow table height 
+  <!-- Berkeley table height -->
     <param name="table_height" value="0.77"/>
+  
+<!-- Willow table height 
+    <param name="table_height" value="0.75"/>
 -->
-  <param name="table_height" value="0.75"/>
     <node pkg="pr2_simple_arm_motions" type="table_frame.py" name="table_frame_watcher" output="screen"/>
 </launch>

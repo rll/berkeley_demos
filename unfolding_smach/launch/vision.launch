@@ -56,9 +56,6 @@
     </node>
     
     <!-- View the annotated feed for said processors -->
-    <node pkg="image_view" type="image_view" name="clump_center_viewer_white">
-        <remap from="image" to="clump_center_node_white/annotated" />
-    </node>
     <node pkg="image_view" type="image_view" name="clump_center_viewer">
         <remap from="image" to="clump_center_node/annotated" />
     </node>
@@ -78,7 +75,4 @@
         <remap from="image" to="towel_fitter_node/annotated" />
     </node>
 
-    <node pkg="image_view" type="image_view" name="towel_viewer_white">
-        <remap from="image" to="towel_fitter_node_white/annotated" />
-    </node>
 </launch>
