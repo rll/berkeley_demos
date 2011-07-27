@@ -59,6 +59,7 @@ class PickupClump(SuccessFailureState):
         GripUtils.go_to_pt(pt,roll=pi/2,yaw=0,pitch=pi/2,arm="l",z_offset=z_offset,grip=False,dur=5.0)
         GripUtils.close_gripper("l")
         while not GripUtils.has_object("l") and not rospy.is_shutdown():
+            print "Z_offset = %f"%z_offset
             z_offset -= 0.02
             if(z_offset < -0.02):
                 return FAILURE
@@ -185,11 +186,11 @@ class FoldTowel(NestedStateMachine):
     def __init__ (self,title=None,transitions=None):
         NestedStateMachine.__init__(self,title,transitions=transitions,outcomes=DEFAULT_OUTCOMES)
         self.add('Arms_Up', ArmsUp(grip=False), {SUCCESS:'Smooth_0', FAILURE:FAILURE})
-        self.add('Smooth_0', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH),
+        self.add('Smooth_0', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH*0.9),
                  {SUCCESS:'Detect_Towel_0',FAILURE:'Detect_Towel_0'})
         self.add('Detect_Towel_0', DetectTowel(), {SUCCESS:'Flip_Towel',FAILURE:'Flip_Towel'})
         self.add('Flip_Towel', FlipTowel(), {SUCCESS:'Smooth_1',FAILURE:'Flip_Towel'})
-        self.add('Smooth_1', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH),
+        self.add('Smooth_1', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH*0.9),
                  {SUCCESS:'Detect_Towel_1',FAILURE:'Detect_Towel_1'})
         self.add('Detect_Towel_1', DetectTowel(), {SUCCESS:'Execute_Fold',FAILURE:'Execute_Fold'})
         self.add('Execute_Fold', ExecuteFold(), {SUCCESS:SUCCESS, FAILURE:'Arms_Up'})
