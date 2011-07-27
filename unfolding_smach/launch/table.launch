@@ -1,6 +1,6 @@
 <launch>
   <!-- Berkeley table height -->
-    <param name="table_height" value="0.77"/>
+    <param name="table_height" value="0.775"/>
   
 <!-- Willow table height 
     <param name="table_height" value="0.75"/>
