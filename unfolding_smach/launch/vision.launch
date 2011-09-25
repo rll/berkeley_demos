@@ -1,10 +1,10 @@
 <!-- Launches all necessary vision applications. -->
 
 <launch>
-    <param name="cropx" value="92" />
+    <param name="cropx" value="90" />
     <param name="cropy" value="135" />
-    <param name="cropwidth" value="504" />
-    <param name="cropheight" value="346"/>
+    <param name="cropwidth" value="450" />
+    <param name="cropheight" value="345"/>
     <!-- Launch stereo and mono converters, depending on which method you want to use for gathering points -->
     <node pkg="stereo_click" type="mono_converter.py" name="mono_converter_node" output="screen">
 		<param name="input" value="processing_points" />
@@ -34,7 +34,7 @@
         <param name="mono_converter" value="mono_converter_node" />
         <param name="stereo_converter" value="stereo_converter_node" />
         <param name="threshold" value="100" />
-        <param name="model" value="towel" />
+        <param name="model" value="towel_model" />
         <param name="mode" value="towel" />
         <param name="num_iters" value="15" />
     </node>

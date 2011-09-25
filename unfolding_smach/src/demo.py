@@ -42,7 +42,7 @@ class Reset(SuccessFailureState):
     def execute(self,userdata):
         arm = userdata.arm
         multiplier = 1 if arm == 'r' else -1
-        if not GripUtils.go_to(x=0.4,y=0,z=0.35,roll=0,yaw=pi/2*multiplier,pitch=pi/4,arm=arm,grip=True,frame="table_height",dur=3.0):
+        if not GripUtils.go_to(x=0.4,y=0,z=0.35,roll=0,yaw=pi/2*multiplier,pitch=pi/4,arm=arm,grip=True,frame="table_height",dur=5.0):
             return FAILURE
         GripUtils.open_gripper(arm)
         GripUtils.recall_arm("b")
@@ -96,9 +96,9 @@ class PickupCorner(SuccessFailureState):
         userdata.cloth_height = None
         
         if arm == "l":
-            x_offset = -0.00 #was -0.01
+            x_offset = -0.01
         else:
-            x_offset = -0.00
+            x_offset = -0.01
         if not GripUtils.grab_point(pt,roll=-pi/2,yaw=yaw,arm=arm,x_offset=x_offset):
             return FAILURE
         else:
@@ -296,11 +296,11 @@ class Fold1(SuccessFailureState):
                                         ,dur=7.5):
             return_val = FAILURE
         print "Folding down!"
-        x_l = bl_x-0.015
-        y_l = bl_y+0.025
+        x_l = bl_x-0.01
+        y_l = bl_y+0.015 # bit too tight
         z_l = z_r = bl_z + 0.02
-        x_r = br_x-0.015
-        y_r = br_y-0.025
+        x_r = br_x-0.01
+        y_r = br_y-0.015 # bit too tight
         yaw_l = -3*pi/4
         yaw_r = 3*pi/4
         pitch_l=pitch_r = pi/4
@@ -330,7 +330,7 @@ class Fold2(SuccessFailureState):
         #Make more centered
         ctr_l_x -= 0.01
         ctr_l_y = .75*bl_y + .25*tl_y
-        z = bl_z
+        z = bl_z + 0.01 # bit too low
         yaw = -pi/2
         roll = -pi/2
         pitch = pi/4
@@ -352,7 +352,7 @@ class Fold2(SuccessFailureState):
             return FAILURE
         if not GripUtils.go_to(x=(ctr_ml_x+ctr_mr_x)/2.0,y=(ctr_ml_y+ctr_mr_y+0.02)/2.0,z=(up_z+bl_z)/2.0,roll=roll,yaw=yaw,pitch=(pitch+3*pi/4)/2.0,arm="l",frame=frame,grip=True,dur=5.0):
             return FAILURE
-        z = bl_z
+        z = bl_z + 0.01 # bit too low
         pitch = 3*pi/4
         
         if not GripUtils.go_to(x=ctr_mr_x,y=ctr_mr_y+0.02,z=z,roll=roll,yaw=yaw,pitch=pitch,arm="l",frame=frame,grip=True,dur=5.0):
@@ -393,6 +393,7 @@ def main(args):
    
     sm = OuterStateMachine(DEFAULT_OUTCOMES)
     START_STATE = 'Clump_To_Triangle'
+
     with sm:
          OuterStateMachine.add('Initialize',Initialize(),{SUCCESS:START_STATE,FAILURE:FAILURE})
          OuterStateMachine.add('Clump_To_Triangle',ClumpToTriangle(),{SUCCESS:'Triangle_To_Rectangle',FAILURE:'Initialize'})
@@ -402,6 +403,7 @@ def main(args):
     sis = smach_ros.IntrospectionServer('demo_smach_server', sm, '/SM_ROOT')
     sis.start()
     outcome = sm.execute()
+    return outcome
     
 if __name__ == '__main__':
     args = sys.argv[1:]
