@@ -98,7 +98,7 @@ class PickupCorner(SuccessFailureState):
         if arm == "l":
             x_offset = -0.01
         else:
-            x_offset = -0.01
+            x_offset = -0.015
         if not GripUtils.grab_point(pt,roll=-pi/2,yaw=yaw,arm=arm,x_offset=x_offset):
             return FAILURE
         else:
@@ -189,9 +189,11 @@ class FoldTowel(NestedStateMachine):
         self.add('Smooth_0', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH*0.9),
                  {SUCCESS:'Detect_Towel_0',FAILURE:'Detect_Towel_0'})
         self.add('Detect_Towel_0', DetectTowel(), {SUCCESS:'Flip_Towel',FAILURE:'Flip_Towel'})
-        self.add('Flip_Towel', FlipTowel(), {SUCCESS:'Smooth_1',FAILURE:'Flip_Towel'})
-        self.add('Smooth_1', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH*0.9),
-                 {SUCCESS:'Detect_Towel_1',FAILURE:'Detect_Towel_1'})
+        #self.add('Flip_Towel', FlipTowel(), {SUCCESS:'Smooth_1',FAILURE:'Flip_Towel'})
+        self.add('Flip_Towel', FlipTowel(), {SUCCESS:'Detect_Towel_1',FAILURE:'Flip_Towel'})
+        # removing step below to save time on demo
+        #self.add('Smooth_1', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH*0.9),
+        #         {SUCCESS:'Detect_Towel_1',FAILURE:'Detect_Towel_1'})
         self.add('Detect_Towel_1', DetectTowel(), {SUCCESS:'Execute_Fold',FAILURE:'Execute_Fold'})
         self.add('Execute_Fold', ExecuteFold(), {SUCCESS:SUCCESS, FAILURE:'Arms_Up'})
         
@@ -246,19 +248,26 @@ class PickupTowel(SuccessFailureState):
         tr = userdata.tr
         userdata.cloth_width = sqrt( (bl.point.x-br.point.x)**2 + (bl.point.y - br.point.y)**2)*1.075
         userdata.cloth_height = max([abs(tl.point.x-bl.point.x),abs(tr.point.x-br.point.x)])
-        if not GripUtils.grab_point(bl,roll=pi/2,yaw=-pi/2,pitch=pi/4,arm="l",x_offset=0.01,INIT_SCOOT_AMT = 0.01):
+        #if not GripUtils.grab_point(bl,roll=pi/2,yaw=-pi/2,pitch=pi/4,arm="l",x_offset=0.01,INIT_SCOOT_AMT = 0.01):
+        #    return FAILURE
+        #if not GripUtils.grab_point(br,roll=-pi/2,yaw=pi/2,pitch=pi/4,arm="r",x_offset=0.01,INIT_SCOOT_AMT = 0.01):
+        #    return FAILURE
+        if not GripUtils.grab_points(point_l=bl,roll_l=pi/2,yaw_l=-pi/2,pitch_l=pi/4,x_offset_l=0.01
+                                    ,point_r=br,roll_r=-pi/2,yaw_r=pi/2,pitch_r=pi/4,x_offset_r=0.01
+                                    ,INIT_SCOOT_AMT = 0.01):
             return FAILURE
-        if not GripUtils.grab_point(br,roll=-pi/2,yaw=pi/2,pitch=pi/4,arm="r",x_offset=0.01,INIT_SCOOT_AMT = 0.01):
-            return FAILURE
+
         return SUCCESS
         
 class ExecuteFold(NestedStateMachine):
     def __init__(self,title=None,transitions=None):
         NestedStateMachine.__init__(self,title,transitions=transitions,outcomes=DEFAULT_OUTCOMES,input_keys=["bl","tl","tr","br"])
         self.add('Fold_1', Fold1(), {SUCCESS:'Smooth_1',FAILURE:FAILURE})
-        self.add('Smooth_1', SmoothOnTable(arm="b",smooth_x=0.45,distance=TABLE_WIDTH), {SUCCESS:'Fold_2',FAILURE:'Fold_2'})
-        self.add('Fold_2', Fold2(), {SUCCESS:'Smooth_2',FAILURE:FAILURE})
-        self.add('Smooth_2', SmoothOnTable(arm="b",smooth_x=0.45,distance=TABLE_WIDTH/2.0), {SUCCESS:SUCCESS,FAILURE:SUCCESS})
+        self.add('Smooth_1', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH*0.9), {SUCCESS:'Fold_2',FAILURE:'Fold_2'})
+        #self.add('Fold_2', Fold2(), {SUCCESS:'Smooth_2',FAILURE:FAILURE})
+        self.add('Fold_2', Fold2(), {SUCCESS:SUCCESS,FAILURE:FAILURE})
+        #disabling smooth below to save time on demo
+        #self.add('Smooth_2', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH*0.9), {SUCCESS:SUCCESS,FAILURE:SUCCESS})
         
 class Fold1(SuccessFailureState):
     def __init__(self):
@@ -269,10 +278,18 @@ class Fold1(SuccessFailureState):
         pt_tl = userdata.tl
         pt_br = userdata.br
         pt_tr = userdata.tr
+        #if not GripUtils.go_to_pts(pt_tl, -pi/2, -pi/3, pi/4, pt_tr, pi/2, pi/3, pi/4, x_offset_l=-0.04,\
+        #        x_offset_r=-0.04):
+        #    return FAILURE
         #FIXME Hard-coded X offsets to compensate for poor calibration. Re-calibrate and REMOVE
+        '''
         if not GripUtils.grab_point(pt_tl,roll=-pi/2,yaw=-pi/3,pitch=pi/4,arm="l",x_offset=-0.04):
             return FAILURE
         if not GripUtils.grab_point(pt_tr,roll=pi/2,yaw= pi/3,pitch=pi/4,arm="r",x_offset=-0.04):
+            return FAILURE
+        '''
+        if not GripUtils.grab_points(pt_tl,roll_l=-pi/2,yaw_l=-pi/3,pitch_l=pi/4,x_offset_l=-0.04, z_offset_l=0.02
+                                    ,point_r=pt_tr,roll_r=pi/2,yaw_r= pi/3,pitch_r=pi/4,x_offset_r=-0.04, z_offset_r=0.01):
             return FAILURE
         (bl_x,bl_y,bl_z) = (pt_bl.point.x,pt_bl.point.y,pt_bl.point.z)
         (tl_x,tl_y,tl_z) = (pt_tl.point.x,pt_tl.point.y,pt_tl.point.z)
@@ -296,11 +313,11 @@ class Fold1(SuccessFailureState):
                                         ,dur=7.5):
             return_val = FAILURE
         print "Folding down!"
-        x_l = bl_x-0.01
-        y_l = bl_y+0.015 # bit too tight
+        x_l = bl_x-0.005
+        y_l = bl_y+0.005 # bit too tight
         z_l = z_r = bl_z + 0.02
-        x_r = br_x-0.01
-        y_r = br_y-0.015 # bit too tight
+        x_r = br_x-0.005
+        y_r = br_y-0.005 # bit too tight
         yaw_l = -3*pi/4
         yaw_r = 3*pi/4
         pitch_l=pitch_r = pi/4
@@ -393,6 +410,7 @@ def main(args):
    
     sm = OuterStateMachine(DEFAULT_OUTCOMES)
     START_STATE = 'Clump_To_Triangle'
+    #START_STATE = 'Fold_Towel'
 
     with sm:
          OuterStateMachine.add('Initialize',Initialize(),{SUCCESS:START_STATE,FAILURE:FAILURE})
