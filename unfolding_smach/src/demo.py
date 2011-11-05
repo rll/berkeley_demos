@@ -98,7 +98,7 @@ class PickupCorner(SuccessFailureState):
         if arm == "l":
             x_offset = -0.01
         else:
-            x_offset = -0.015
+            x_offset = -0.005
         if not GripUtils.grab_point(pt,roll=-pi/2,yaw=yaw,arm=arm,x_offset=x_offset):
             return FAILURE
         else:
@@ -265,9 +265,9 @@ class ExecuteFold(NestedStateMachine):
         self.add('Fold_1', Fold1(), {SUCCESS:'Smooth_1',FAILURE:FAILURE})
         self.add('Smooth_1', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH*0.9), {SUCCESS:'Fold_2',FAILURE:'Fold_2'})
         #self.add('Fold_2', Fold2(), {SUCCESS:'Smooth_2',FAILURE:FAILURE})
-        self.add('Fold_2', Fold2(), {SUCCESS:SUCCESS,FAILURE:FAILURE})
-        #disabling smooth below to save time on demo
-        #self.add('Smooth_2', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH*0.9), {SUCCESS:SUCCESS,FAILURE:SUCCESS})
+        self.add('Fold_2', Fold2(), {SUCCESS:'Smooth_2',FAILURE:FAILURE})
+        # Reenabling #disabling smooth below to save time on demo
+        self.add('Smooth_2', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH*0.9), {SUCCESS:SUCCESS,FAILURE:SUCCESS})
         
 class Fold1(SuccessFailureState):
     def __init__(self):
