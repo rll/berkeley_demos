@@ -410,7 +410,6 @@ def main(args):
    
     sm = OuterStateMachine(DEFAULT_OUTCOMES)
     START_STATE = 'Clump_To_Triangle'
-    #START_STATE = 'Fold_Towel'
 
     with sm:
          OuterStateMachine.add('Initialize',Initialize(),{SUCCESS:START_STATE,FAILURE:FAILURE})
