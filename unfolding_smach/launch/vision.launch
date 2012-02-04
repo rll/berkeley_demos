@@ -4,7 +4,7 @@
     <param name="cropx" value="95" />
     <param name="cropy" value="145" />
     <param name="cropwidth" value="440" />
-    <param name="cropheight" value="345"/>
+    <param name="cropheight" value="400"/>
     <!-- Launch stereo and mono converters, depending on which method you want to use for gathering points -->
     <node pkg="stereo_click" type="mono_converter.py" name="mono_converter_node" output="screen">
 		<param name="input" value="processing_points" />

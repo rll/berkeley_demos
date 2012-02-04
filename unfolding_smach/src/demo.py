@@ -17,7 +17,7 @@ from smach_utils.SmachUtils import *
 TABLE_WIDTH = 0.98      #Width of the table used. Can (and should) be inferred visually, but as we only have one table
                         #we keep it as is.
 towel_width = 0.6       #An arbitrary guess at the width of the towel. Just used as a seed -- no need to be correct
-towel_height = 0.2      #Same for height
+towel_height = 0.35      #Same for height
 MAX_FLIPS = 1           #Number of times to flip the towel
 
 (TWITTER,CONSOLE) = range(2)
@@ -97,9 +97,11 @@ class PickupCorner(SuccessFailureState):
         
         if arm == "l":
             x_offset = -0.01
+            y_offset = -0.02
         else:
             x_offset = -0.005
-        if not GripUtils.grab_point(pt,roll=-pi/2,yaw=yaw,arm=arm,x_offset=x_offset):
+            y_offset = 0.02
+        if not GripUtils.grab_point(pt,roll=-pi/2,yaw=yaw,arm=arm,x_offset=x_offset,y_offset=y_offset):
             return FAILURE
         else:
             if self.let_go:
@@ -252,8 +254,8 @@ class PickupTowel(SuccessFailureState):
         #    return FAILURE
         #if not GripUtils.grab_point(br,roll=-pi/2,yaw=pi/2,pitch=pi/4,arm="r",x_offset=0.01,INIT_SCOOT_AMT = 0.01):
         #    return FAILURE
-        if not GripUtils.grab_points(point_l=bl,roll_l=pi/2,yaw_l=-pi/2,pitch_l=pi/4,x_offset_l=0.01
-                                    ,point_r=br,roll_r=-pi/2,yaw_r=pi/2,pitch_r=pi/4,x_offset_r=0.01
+        if not GripUtils.grab_points(point_l=bl,roll_l=pi/2,yaw_l=-pi/2,pitch_l=pi/4,x_offset_l=0.02
+                                    ,point_r=br,roll_r=-pi/2,yaw_r=pi/2,pitch_r=pi/4,x_offset_r=0.02
                                     ,INIT_SCOOT_AMT = 0.01):
             return FAILURE
 
@@ -313,10 +315,10 @@ class Fold1(SuccessFailureState):
                                         ,dur=7.5):
             return_val = FAILURE
         print "Folding down!"
-        x_l = bl_x-0.005
+        x_l = bl_x
         y_l = bl_y+0.005 # bit too tight
         z_l = z_r = bl_z + 0.02
-        x_r = br_x-0.005
+        x_r = br_x
         y_r = br_y-0.005 # bit too tight
         yaw_l = -3*pi/4
         yaw_r = 3*pi/4
@@ -410,6 +412,8 @@ def main(args):
    
     sm = OuterStateMachine(DEFAULT_OUTCOMES)
     START_STATE = 'Clump_To_Triangle'
+    #START_STATE = 'Triangle_To_Rectangle'
+    #START_STATE = 'Fold_Towel'
 
     with sm:
          OuterStateMachine.add('Initialize',Initialize(),{SUCCESS:START_STATE,FAILURE:FAILURE})
