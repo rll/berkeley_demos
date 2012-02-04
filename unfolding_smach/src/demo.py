@@ -411,9 +411,9 @@ def main(args):
     rospy.init_node("unfolding_smach_demo_node")
    
     sm = OuterStateMachine(DEFAULT_OUTCOMES)
-    #START_STATE = 'Clump_To_Triangle'
+    START_STATE = 'Clump_To_Triangle'
     #START_STATE = 'Triangle_To_Rectangle'
-    START_STATE = 'Fold_Towel'
+    #START_STATE = 'Fold_Towel'
 
     with sm:
          OuterStateMachine.add('Initialize',Initialize(),{SUCCESS:START_STATE,FAILURE:FAILURE})
