@@ -255,8 +255,8 @@ class PickupTowel(SuccessFailureState):
         #if not GripUtils.grab_point(br,roll=-pi/2,yaw=pi/2,pitch=pi/4,arm="r",x_offset=0.01,INIT_SCOOT_AMT = 0.01):
         #    return FAILURE
         if not GripUtils.grab_points(point_l=bl,roll_l=pi/2,yaw_l=-pi/2,pitch_l=pi/4,x_offset_l=0.02
-                                    ,point_r=br,roll_r=-pi/2,yaw_r=pi/2,pitch_r=pi/4,x_offset_r=0.02
-                                    ,INIT_SCOOT_AMT = 0.01):
+                                    ,point_r=br,roll_r=-pi/2,yaw_r=pi/2,pitch_r=pi/4,x_offset_r=0.02, y_offset_r=0.01,
+                                    INIT_SCOOT_AMT = 0.01):
             return FAILURE
 
         return SUCCESS
@@ -290,8 +290,8 @@ class Fold1(SuccessFailureState):
         if not GripUtils.grab_point(pt_tr,roll=pi/2,yaw= pi/3,pitch=pi/4,arm="r",x_offset=-0.04):
             return FAILURE
         '''
-        if not GripUtils.grab_points(pt_tl,roll_l=-pi/2,yaw_l=-pi/3,pitch_l=pi/4,x_offset_l=-0.04, z_offset_l=0.02
-                                    ,point_r=pt_tr,roll_r=pi/2,yaw_r= pi/3,pitch_r=pi/4,x_offset_r=-0.04, z_offset_r=0.01):
+        if not GripUtils.grab_points(pt_tl,roll_l=-pi/2,yaw_l=-pi/3,pitch_l=pi/4,x_offset_l=-0.01, z_offset_l=0.02
+                                    ,point_r=pt_tr,roll_r=pi/2,yaw_r= pi/3,pitch_r=pi/4,x_offset_r=-0.01, y_offset_r=0.01,z_offset_r=0.01):
             return FAILURE
         (bl_x,bl_y,bl_z) = (pt_bl.point.x,pt_bl.point.y,pt_bl.point.z)
         (tl_x,tl_y,tl_z) = (pt_tl.point.x,pt_tl.point.y,pt_tl.point.z)
@@ -411,9 +411,9 @@ def main(args):
     rospy.init_node("unfolding_smach_demo_node")
    
     sm = OuterStateMachine(DEFAULT_OUTCOMES)
-    START_STATE = 'Clump_To_Triangle'
+    #START_STATE = 'Clump_To_Triangle'
     #START_STATE = 'Triangle_To_Rectangle'
-    #START_STATE = 'Fold_Towel'
+    START_STATE = 'Fold_Towel'
 
     with sm:
          OuterStateMachine.add('Initialize',Initialize(),{SUCCESS:START_STATE,FAILURE:FAILURE})
