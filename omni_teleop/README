@@ -1,0 +1,30 @@
+This package has only been tested with diamondback, so make sure both brett1 and your pr2base are using diamondback.
+
+After downloading and installing these files, make sure to run sync_sandbox so that the same files are available on brett1 as well.
+
+To control both arms, you will need one omni connected to pr2base and the other connected to heli2. Make sure all the code is also downloaded on heli2.
+
+Connect one omni to pr2base and the other to heli2. On heli2, make sure the machine recognizes the omni:
+
+roscd phantom_omni
+./install_open_haptics.sh
+
+You should see a window pop up with the omni recognized as a device. Press OK. Do this on pr2base and heli2.
+
+After both machines have recognized the omnis, make sure that both omni pens are stored in their potential wells, and that the PR2 has been started and in good condition. Then run:
+
+roslaunch phantom_omni omni2.launch
+
+on both machines.
+
+After that is done, run 
+
+roslaunch pr2_omni_teleop stereo_omni_pr2.launch 
+
+on pr2base. Take the omni pens out of their potential wells, and let them guide you to the current positions of the PR2 arms. Each arm can be activated independently by pressing both buttons (light grey and dark grey) on the pen that correspond to the arm you want to control. To deactivate control for an arm, press both buttons again. To close and open grippers, press the dark and light grey buttons, respectively. 
+
+To enable head tracking for the pr2, run
+
+rosrun pr2_omni_teleop track_gripper.py
+
+The PR2 should then track the midpoint of the two grippers.
