@@ -1,0 +1,21 @@
+(cl:defpackage hrl_lib-msg
+  (:use )
+  (:export
+   "<STRINGARRAY>"
+   "STRINGARRAY"
+   "<NUMPYARRAY>"
+   "NUMPYARRAY"
+   "<PLANARBASEVEL>"
+   "PLANARBASEVEL"
+   "<PLANARBASEVELLIMITS>"
+   "PLANARBASEVELLIMITS"
+   "<WRENCHPOSEARRAYSTAMPED>"
+   "WRENCHPOSEARRAYSTAMPED"
+   "<POSE3DOF>"
+   "POSE3DOF"
+   "<STRING>"
+   "STRING"
+   "<VO_DATA>"
+   "VO_DATA"
+  ))
+

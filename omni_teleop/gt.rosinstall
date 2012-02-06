@@ -1,0 +1,7 @@
+
+- other: {local-name: /opt/ros/diamondback/ros}
+
+- other: {local-name: /opt/ros/diamondback/stacks}
+
+- svn: {local-name: gt_packages, uri: 'http://gt-ros-pkg.googlecode.com/svn/trunk/'}
+
