@@ -23,6 +23,8 @@ MAX_FLIPS = 1           #Number of times to flip the towel
 (TWITTER,CONSOLE) = range(2)
 MODE = CONSOLE
 
+SAFE_FLAG=True # Add some stuff which makes demo slower bug more reliable
+
 
 """
 Utility functions
@@ -78,10 +80,12 @@ class PickupCorner(SuccessFailureState):
             arm = 'l'
             processor = 'far_left_finder_node'
             yaw = -pi/2
+            roll=-pi/2
         else:
             arm = 'r'
             processor = 'far_right_finder_node'
             yaw = pi/2
+            roll=pi/2
         process_mono = rospy.ServiceProxy("%s/process_mono"%processor,ProcessMono)
         resp = process_mono("wide_stereo/left")
         pt = resp.pts3d[0]
@@ -99,9 +103,9 @@ class PickupCorner(SuccessFailureState):
             x_offset = -0.01
             y_offset = -0.02
         else:
-            x_offset = -0.005
+            x_offset = -0.00
             y_offset = 0.02
-        if not GripUtils.grab_point(pt,roll=-pi/2,yaw=yaw,arm=arm,x_offset=x_offset,y_offset=y_offset):
+        if not GripUtils.grab_point(pt,roll=roll,yaw=yaw,arm=arm,x_offset=x_offset,y_offset=y_offset):
             return FAILURE
         else:
             if self.let_go:
@@ -128,7 +132,14 @@ class ClumpToTriangle(NestedStateMachine):
         self.add('Spread_Out_Left', SpreadAcross('l',TABLE_WIDTH,towel_width),{SUCCESS:'Pickup_Right',FAILURE:FAILURE})
         self.add('Pickup_Right', PickupCorner('r',let_go=True),{SUCCESS:'Recall_Left',FAILURE:'Reset'})
         self.add('Recall_Left', RecallArm('l'),{SUCCESS:'Spread_Out_Right',FAILURE:FAILURE})
-        self.add('Spread_Out_Right', SpreadAcross('r',TABLE_WIDTH,towel_width),{SUCCESS:'Pickup_Left',FAILURE:FAILURE})
+        if SAFE_FLAG: # Drag it across a couple more times to ensure corners are grabbed
+            self.add('Spread_Out_Right', SpreadAcross('r',TABLE_WIDTH,towel_width),{SUCCESS:'Pickup_Left0',FAILURE:FAILURE})
+            self.add('Pickup_Left0', PickupCorner('l',let_go=False),{SUCCESS:'Recall_Right',FAILURE:'Reset'})
+            self.add('Recall_Right', RecallArm('r'),{SUCCESS:'Spread_Out_Left1',FAILURE:FAILURE})
+            self.add('Spread_Out_Left1', SpreadAcross('l',TABLE_WIDTH,towel_width),{SUCCESS:'Pickup_Right1',FAILURE:FAILURE})
+            self.add('Pickup_Right1', PickupCorner('r',let_go=False),{SUCCESS:'Shake_Triangle',FAILURE:'Reset'})
+        else:
+            self.add('Spread_Out_Right', SpreadAcross('r',TABLE_WIDTH,towel_width),{SUCCESS:'Pickup_Left',FAILURE:FAILURE})
         self.add('Pickup_Left', PickupCorner('l',let_go=False),{SUCCESS:'Shake_Triangle',FAILURE:'Reset'})
         self.add('Shake_Triangle',ShakeBothArms(2,violent=False),{SUCCESS:'Layout_Triangle',FAILURE:'Layout_Triangle'})
         self.add('Layout_Triangle', SpreadOut(0.48),{SUCCESS:SUCCESS,FAILURE:FAILURE})
@@ -290,8 +301,8 @@ class Fold1(SuccessFailureState):
         if not GripUtils.grab_point(pt_tr,roll=pi/2,yaw= pi/3,pitch=pi/4,arm="r",x_offset=-0.04):
             return FAILURE
         '''
-        if not GripUtils.grab_points(pt_tl,roll_l=-pi/2,yaw_l=-pi/3,pitch_l=pi/4,x_offset_l=-0.01, z_offset_l=0.02
-                                    ,point_r=pt_tr,roll_r=pi/2,yaw_r= pi/3,pitch_r=pi/4,x_offset_r=-0.01, y_offset_r=0.01,z_offset_r=0.01):
+        if not GripUtils.grab_points(pt_tl,roll_l=-pi/2,yaw_l=-pi/3,pitch_l=pi/4,x_offset_l=-0.025, z_offset_l=0.02
+                                    ,point_r=pt_tr,roll_r=pi/2,yaw_r= pi/3,pitch_r=pi/4,x_offset_r=-0.035, y_offset_r=0.01,z_offset_r=0.01):
             return FAILURE
         (bl_x,bl_y,bl_z) = (pt_bl.point.x,pt_bl.point.y,pt_bl.point.z)
         (tl_x,tl_y,tl_z) = (pt_tl.point.x,pt_tl.point.y,pt_tl.point.z)
@@ -430,4 +441,5 @@ if __name__ == '__main__':
     args = sys.argv[1:]
     try:
         main(args)
+        rospy.spin()
     except rospy.ROSInterruptException: pass
