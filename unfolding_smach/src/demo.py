@@ -23,7 +23,7 @@ MAX_FLIPS = 1           #Number of times to flip the towel
 (TWITTER,CONSOLE) = range(2)
 MODE = CONSOLE
 
-SAFE_FLAG=True # Add some stuff which makes demo slower bug more reliable
+SAFE_FLAG=False # Add some stuff which makes demo slower but more reliable
 
 
 """
@@ -67,16 +67,19 @@ class PickupClump(SuccessFailureState):
                 return FAILURE
             GripUtils.go_to_pt(pt,roll=pi/2,yaw=0,pitch=pi/2,arm="l",z_offset=z_offset,grip=False,dur=5.0)
             GripUtils.close_gripper("l")
+        GripUtils.recall_arm("l", grip=True)
         return SUCCESS
 
 class PickupCorner(SuccessFailureState):
-    def __init__(self,side,let_go=False):
+    def __init__(self,arm,let_go=False,side=None,recall=False):
         SuccessFailureState.__init__(self,output_keys=["cloth_width","cloth_height","arm"])
-        self.side = side
+        self.arm = arm
         self.let_go = let_go
+        self.side = side
+        self.recall = recall
 
     def execute(self, userdata):
-        if self.side == 'l':
+        if self.arm == 'l':
             arm = 'l'
             processor = 'far_left_finder_node'
             yaw = -pi/2
@@ -99,17 +102,26 @@ class PickupCorner(SuccessFailureState):
         #userdata.cloth_width = abs(pt_opp.point.y - pt.point.y)
         userdata.cloth_height = None
         
+        # Offsets for safety
         if arm == "l":
-            x_offset = -0.01
             y_offset = -0.02
+            z_offset = 0.01
         else:
-            x_offset = -0.00
             y_offset = 0.02
+        if self.side == "t":
+            x_offset = -0.02
+        elif self.side == "b":
+            x_offset = 0.01
+        else:
+            x_offset = 0
+
         if not GripUtils.grab_point(pt,roll=roll,yaw=yaw,arm=arm,x_offset=x_offset,y_offset=y_offset):
             return FAILURE
         else:
             if self.let_go:
                 GripUtils.open_gripper(opp_arm(arm))
+            if self.recall:
+                GripUtils.recall_arm(arm, grip=True)
             return SUCCESS
 
 
@@ -130,17 +142,10 @@ class ClumpToTriangle(NestedStateMachine):
         NestedStateMachine.__init__(self,title,transitions=transitions,outcomes=DEFAULT_OUTCOMES)
         self.add('Pick_Up_Clump', PickupClump(), {SUCCESS:'Spread_Out_Left', FAILURE: 'Pick_Up_Clump'})
         self.add('Spread_Out_Left', SpreadAcross('l',TABLE_WIDTH,towel_width),{SUCCESS:'Pickup_Right',FAILURE:FAILURE})
-        self.add('Pickup_Right', PickupCorner('r',let_go=True),{SUCCESS:'Recall_Left',FAILURE:'Reset'})
+        self.add('Pickup_Right', PickupCorner('r',let_go=True,side="t",recall=True),{SUCCESS:'Recall_Left',FAILURE:'Reset'})
         self.add('Recall_Left', RecallArm('l'),{SUCCESS:'Spread_Out_Right',FAILURE:FAILURE})
-        if SAFE_FLAG: # Drag it across a couple more times to ensure corners are grabbed
-            self.add('Spread_Out_Right', SpreadAcross('r',TABLE_WIDTH,towel_width),{SUCCESS:'Pickup_Left0',FAILURE:FAILURE})
-            self.add('Pickup_Left0', PickupCorner('l',let_go=False),{SUCCESS:'Recall_Right',FAILURE:'Reset'})
-            self.add('Recall_Right', RecallArm('r'),{SUCCESS:'Spread_Out_Left1',FAILURE:FAILURE})
-            self.add('Spread_Out_Left1', SpreadAcross('l',TABLE_WIDTH,towel_width),{SUCCESS:'Pickup_Right1',FAILURE:FAILURE})
-            self.add('Pickup_Right1', PickupCorner('r',let_go=False),{SUCCESS:'Shake_Triangle',FAILURE:'Reset'})
-        else:
-            self.add('Spread_Out_Right', SpreadAcross('r',TABLE_WIDTH,towel_width),{SUCCESS:'Pickup_Left',FAILURE:FAILURE})
-        self.add('Pickup_Left', PickupCorner('l',let_go=False),{SUCCESS:'Shake_Triangle',FAILURE:'Reset'})
+        self.add('Spread_Out_Right', SpreadAcross('r',TABLE_WIDTH,towel_width),{SUCCESS:'Pickup_Left',FAILURE:FAILURE})
+        self.add('Pickup_Left', PickupCorner('l',let_go=False,side="t"),{SUCCESS:'Shake_Triangle',FAILURE:'Reset'})
         self.add('Shake_Triangle',ShakeBothArms(2,violent=False),{SUCCESS:'Layout_Triangle',FAILURE:'Layout_Triangle'})
         self.add('Layout_Triangle', SpreadOut(0.48),{SUCCESS:SUCCESS,FAILURE:FAILURE})
         self.add('Reset',Reset(),{SUCCESS:'Pick_Up_Clump',FAILURE:FAILURE})
@@ -152,7 +157,7 @@ class TriangleToRectangle(NestedStateMachine):
         NestedStateMachine.__init__(self,title,transitions=transitions,outcomes=DEFAULT_OUTCOMES)
         self.add('Grab_Triangle', GrabTriangle(), {SUCCESS:'Shake_Towel', FAILURE: FAILURE})
         self.add('Shake_Towel',ShakeBothArms(1,violent=False),{SUCCESS:'Layout_Towel',FAILURE:'Layout_Towel'})
-        self.add('Layout_Towel',SpreadOut(0.40),{SUCCESS:SUCCESS,FAILURE:FAILURE}) #was 0.43
+        self.add('Layout_Towel',SpreadOut(0.5),{SUCCESS:SUCCESS,FAILURE:FAILURE}) #was 0.43
 
 class GrabTriangle(SuccessFailureState):
     def __init__(self):
@@ -265,8 +270,9 @@ class PickupTowel(SuccessFailureState):
         #    return FAILURE
         #if not GripUtils.grab_point(br,roll=-pi/2,yaw=pi/2,pitch=pi/4,arm="r",x_offset=0.01,INIT_SCOOT_AMT = 0.01):
         #    return FAILURE
-        if not GripUtils.grab_points(point_l=bl,roll_l=pi/2,yaw_l=-pi/2,pitch_l=pi/4,x_offset_l=0.02
-                                    ,point_r=br,roll_r=-pi/2,yaw_r=pi/2,pitch_r=pi/4,x_offset_r=0.02, y_offset_r=0.01,
+        if not GripUtils.grab_points(point_l=bl,roll_l=pi/2,yaw_l=-pi/2,pitch_l=pi/4,x_offset_l=0.01
+                                    ,point_r=br,roll_r=-pi/2,yaw_r=pi/2,pitch_r=pi/4,x_offset_r=0.01,
+                                    y_offset_l=-0.01, y_offset_r=0.01,
                                     INIT_SCOOT_AMT = 0.01):
             return FAILURE
 
@@ -277,7 +283,6 @@ class ExecuteFold(NestedStateMachine):
         NestedStateMachine.__init__(self,title,transitions=transitions,outcomes=DEFAULT_OUTCOMES,input_keys=["bl","tl","tr","br"])
         self.add('Fold_1', Fold1(), {SUCCESS:'Smooth_1',FAILURE:FAILURE})
         self.add('Smooth_1', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH*0.9), {SUCCESS:'Fold_2',FAILURE:'Fold_2'})
-        #self.add('Fold_2', Fold2(), {SUCCESS:'Smooth_2',FAILURE:FAILURE})
         self.add('Fold_2', Fold2(), {SUCCESS:'Smooth_2',FAILURE:FAILURE})
         # Reenabling #disabling smooth below to save time on demo
         self.add('Smooth_2', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH*0.9), {SUCCESS:SUCCESS,FAILURE:SUCCESS})
@@ -301,8 +306,10 @@ class Fold1(SuccessFailureState):
         if not GripUtils.grab_point(pt_tr,roll=pi/2,yaw= pi/3,pitch=pi/4,arm="r",x_offset=-0.04):
             return FAILURE
         '''
-        if not GripUtils.grab_points(pt_tl,roll_l=-pi/2,yaw_l=-pi/3,pitch_l=pi/4,x_offset_l=-0.025, z_offset_l=0.02
-                                    ,point_r=pt_tr,roll_r=pi/2,yaw_r= pi/3,pitch_r=pi/4,x_offset_r=-0.035, y_offset_r=0.01,z_offset_r=0.01):
+        #FIXME: For some reason large offsets required, #DEBUG
+        if not GripUtils.grab_points(pt_tl,roll_l=-pi/2,yaw_l=-pi/3,pitch_l=pi/4,x_offset_l=-0.07, z_offset_l=0.015
+                                    ,point_r=pt_tr,roll_r=pi/2,yaw_r= pi/3,pitch_r=pi/4,x_offset_r=-0.06,
+                                    y_offset_r=0.01, y_offset_l=-0.035, z_offset_r=0.01):
             return FAILURE
         (bl_x,bl_y,bl_z) = (pt_bl.point.x,pt_bl.point.y,pt_bl.point.z)
         (tl_x,tl_y,tl_z) = (pt_tl.point.x,pt_tl.point.y,pt_tl.point.z)
@@ -327,10 +334,10 @@ class Fold1(SuccessFailureState):
             return_val = FAILURE
         print "Folding down!"
         x_l = bl_x
-        y_l = bl_y+0.005 # bit too tight
+        y_l = bl_y-0.01 # bit too tight
         z_l = z_r = bl_z + 0.02
         x_r = br_x
-        y_r = br_y-0.005 # bit too tight
+        y_r = br_y+0.01 # bit too tight
         yaw_l = -3*pi/4
         yaw_r = 3*pi/4
         pitch_l=pitch_r = pi/4
@@ -357,8 +364,6 @@ class Fold2(SuccessFailureState):
         (tr_x,tr_y,tr_z) = (pt_tr.point.x,pt_tr.point.y,pt_tr.point.z)
         
         ctr_l_x = .75*bl_x + .25*tl_x
-        #Make more centered
-        ctr_l_x -= 0.01
         ctr_l_y = .75*bl_y + .25*tl_y
         z = bl_z + 0.01 # bit too low
         yaw = -pi/2
@@ -368,8 +373,6 @@ class Fold2(SuccessFailureState):
         if not GripUtils.grab(x=ctr_l_x,y=ctr_l_y,z=z,roll=roll,yaw=yaw,pitch=pitch,arm="l",frame=frame):
             return FAILURE
         ctr_r_x = .75*br_x + .25*tr_x
-        #Make more centered
-        ctr_r_x -= 0.01
         ctr_r_y = .75*br_y + .25*tr_y
         alpha = 0.333
         ctr_ml_x = (1-alpha)*ctr_l_x + alpha*ctr_r_x
@@ -408,7 +411,7 @@ class Fold2(SuccessFailureState):
         if not GripUtils.go_to(x=ctr_ml_x,y=ctr_ml_y-0.02,z=z,roll=roll,yaw=yaw,pitch=pitch,arm="r",frame=frame,grip=True,dur=5.0):
             return FAILURE
         GripUtils.open_gripper("r")
-        if not GripUtils.go_to(x=ctr_ml_x,y=ctr_ml_y+0.05,z=z+0.02,roll=roll,yaw=yaw,pitch=pitch,arm="r",frame=frame,grip=False,dur=1.0):
+        if not GripUtils.go_to(x=ctr_ml_x,y=ctr_ml_y+0.06,z=z+0.02,roll=roll,yaw=yaw,pitch=pitch,arm="r",frame=frame,grip=False,dur=1.0):
             return FAILURE
         GripUtils.recall_arm("r")
         
@@ -422,6 +425,11 @@ def main(args):
     rospy.init_node("unfolding_smach_demo_node")
    
     sm = OuterStateMachine(DEFAULT_OUTCOMES)
+    sis = smach_ros.IntrospectionServer('unfolding_smach_server', sm, '/MAIN')
+    sis.start()
+
+
+    # Modify this to debug specific parts
     START_STATE = 'Clump_To_Triangle'
     #START_STATE = 'Triangle_To_Rectangle'
     #START_STATE = 'Fold_Towel'
@@ -435,11 +443,15 @@ def main(args):
     sis = smach_ros.IntrospectionServer('demo_smach_server', sm, '/SM_ROOT')
     sis.start()
     outcome = sm.execute()
-    return outcome
+
+    rospy.spin()
+    sis.stop()
+    Reset()
+    
     
 if __name__ == '__main__':
     args = sys.argv[1:]
     try:
         main(args)
-        rospy.spin()
     except rospy.ROSInterruptException: pass
+        
