@@ -12,6 +12,8 @@ import sys
 from smach import State, StateMachine
 import smach_ros
 from smach_utils.SmachUtils import *
+from smach_utils.brett_talk import *
+from sensor_msgs.msg import JointState
 
 #Initial params. Note that triangle_length, towel_width, and towel_height will be overridden once it has detected the towel
 TABLE_WIDTH = 0.98      #Width of the table used. Can (and should) be inferred visually, but as we only have one table
@@ -19,6 +21,7 @@ TABLE_WIDTH = 0.98      #Width of the table used. Can (and should) be inferred v
 towel_width = 0.6       #An arbitrary guess at the width of the towel. Just used as a seed -- no need to be correct
 towel_height = 0.35      #Same for height
 MAX_FLIPS = 1           #Number of times to flip the towel
+
 
 (TWITTER,CONSOLE) = range(2)
 MODE = CONSOLE
@@ -42,6 +45,7 @@ class Reset(SuccessFailureState):
     def __init__(self):
         SuccessFailureState.__init__(self,input_keys=["arm"])
     def execute(self,userdata):
+        pr2_say(talk_reset)
         arm = userdata.arm
         multiplier = 1 if arm == 'r' else -1
         if not GripUtils.go_to(x=0.4,y=0,z=0.35,roll=0,yaw=pi/2*multiplier,pitch=pi/4,arm=arm,grip=True,frame="table_height",dur=5.0):
@@ -53,7 +57,7 @@ class Reset(SuccessFailureState):
 class PickupClump(SuccessFailureState):
 
     def execute(self, userdata):
-       
+        pr2_say(talk_pickupclump)
         process_mono = rospy.ServiceProxy("clump_center_node/process_mono",ProcessMono)
         resp = process_mono("wide_stereo/left")
         pt = resp.pts3d[0]
@@ -108,8 +112,9 @@ class PickupCorner(SuccessFailureState):
             z_offset = 0.01
         else:
             y_offset = 0.02
+            x_offset = 0.02
         if self.side == "t":
-            x_offset = -0.02
+            x_offset = -0.01
         elif self.side == "b":
             x_offset = 0.01
         else:
@@ -127,11 +132,28 @@ class PickupCorner(SuccessFailureState):
 
 ### Phase 1: Initialize ###
 class Initialize(NestedStateMachine):
-    def __init__(self, title=None, transitions=None):
+    def __init__(self, title=None, transitions=None):        
         NestedStateMachine.__init__(self, title, transitions=transitions,outcomes=DEFAULT_OUTCOMES)
+        pr2_say(talk_greet)
         self.add('Arms_Up', ArmsUp(grip=False), {SUCCESS:'Look_Down', FAILURE:FAILURE})
-        self.add('Look_Down', StanceState('look_down'), {SUCCESS:SUCCESS, FAILURE:FAILURE})
-        
+        self.add('Look_Down', StanceState('look_down'), {SUCCESS:SUCCESS, FAILURE:FAILURE})        
+
+        # Calibrate open/close tolerances automatically
+        GripUtils.close_gripper('b')
+        rospy.sleep(1.0)
+        joint_states_msg = rospy.wait_for_message('joint_states', JointState)
+        joint_states = dict(zip(joint_states_msg.name, joint_states_msg.position))
+        l_eps = joint_states['l_gripper_joint']
+        r_eps = joint_states['r_gripper_joint']
+        rel_tol = 0.1
+        abs_tol = 0.0001
+        l_has_obj_min = l_eps + max(abs_tol, abs(l_eps*rel_tol))
+        r_has_obj_min = r_eps + max(abs_tol, abs(l_eps*rel_tol))
+        rospy.set_param('l_has_obj_min', l_has_obj_min)
+        rospy.set_param('r_has_obj_min', r_has_obj_min)
+
+        pr2_say(talk_initialize)
+
 ### Phase 2: ClumpToTriangle ###
 ## PickUpClump -> SpreadOutRight -> PickupLeft -> SpreadOutLeft -> PickupRight -> LayoutTriangle ##
 
@@ -149,7 +171,7 @@ class ClumpToTriangle(NestedStateMachine):
         self.add('Shake_Triangle',ShakeBothArms(2,violent=False),{SUCCESS:'Layout_Triangle',FAILURE:'Layout_Triangle'})
         self.add('Layout_Triangle', SpreadOut(0.48),{SUCCESS:SUCCESS,FAILURE:FAILURE})
         self.add('Reset',Reset(),{SUCCESS:'Pick_Up_Clump',FAILURE:FAILURE})
-
+        
 ### Phase 3: TriangleToRectangle ###
 
 class TriangleToRectangle(NestedStateMachine):
@@ -165,6 +187,7 @@ class GrabTriangle(SuccessFailureState):
         
 
     def execute(self, userdata):
+        pr2_say(talk_triangles)
         process_mono = rospy.ServiceProxy("triangle_fitter_node/process_mono",ProcessMono)
         resp = process_mono("wide_stereo/left")
         pt_l = resp.pts3d[0]
@@ -187,6 +210,7 @@ class GrabTriangle(SuccessFailureState):
         if left:
             GripUtils.recall_arm("l")
             if GripUtils.grab_point(pt_l,roll=pi/2,yaw=-pi/3,pitch=pi/4,arm="l",x_offset=0.005):
+                pr2_say(talk_spreadout)
                 return SUCCESS
             else:
                 return FAILURE
@@ -194,10 +218,11 @@ class GrabTriangle(SuccessFailureState):
             
             GripUtils.recall_arm("r")
             if GripUtils.grab_point(pt_r,roll=-pi/2,yaw=pi/3,pitch=pi/4,arm="r",x_offset=0.005):
+                pr2_say(talk_spreadout)
                 return SUCCESS
             else:
                 return FAILURE
-
+            
 ### Phase 4: FoldTowel ###
 
 class FoldTowel(NestedStateMachine):
@@ -213,15 +238,15 @@ class FoldTowel(NestedStateMachine):
         #self.add('Smooth_1', SmoothOnTable(arm="b",smooth_x=0.5,distance=TABLE_WIDTH*0.9),
         #         {SUCCESS:'Detect_Towel_1',FAILURE:'Detect_Towel_1'})
         self.add('Detect_Towel_1', DetectTowel(), {SUCCESS:'Execute_Fold',FAILURE:'Execute_Fold'})
-        self.add('Execute_Fold', ExecuteFold(), {SUCCESS:SUCCESS, FAILURE:'Arms_Up'})
+        #self.add('Execute_Fold', ExecuteFold(), {SUCCESS:SUCCESS, FAILURE:'Arms_Up'})
+        self.add('Execute_Fold', ExecuteFold(), {SUCCESS:SUCCESS, FAILURE:FAILURE})
         
 class FlipTowel(NestedStateMachine):
     def __init__ (self,title=None,transitions=None):
         NestedStateMachine.__init__(self,title,transitions=transitions,outcomes=DEFAULT_OUTCOMES,input_keys=["bl","tl","tr","br"])
         #self.add('Detect_Towel', DetectTowel(), {SUCCESS:'Pickup_Towel', FAILURE:FAILURE})
         self.add('Pickup_Towel', PickupTowel(), {SUCCESS:'Layout_Towel', FAILURE:FAILURE})
-        self.add('Layout_Towel', SpreadOut(0.42,recall=True),{SUCCESS:SUCCESS,FAILURE:FAILURE})
-        
+        self.add('Layout_Towel', SpreadOut(0.42,recall=True),{SUCCESS:SUCCESS,FAILURE:FAILURE})        
 
         
 class DetectTowel(SuccessFailureState):
@@ -229,7 +254,8 @@ class DetectTowel(SuccessFailureState):
         SuccessFailureState.__init__(self,output_keys=["bl","tl","tr","br"])
         self.flip_count = 0
         
-    def execute(self,userdata):
+    def execute(self,userdata):        
+        pr2_say(talk_pose1)
         process_mono = rospy.ServiceProxy("towel_fitter_node/process_mono",ProcessMono)
         resp = process_mono("wide_stereo/left")
         userdata.bl = resp.pts3d[0]
@@ -272,7 +298,7 @@ class PickupTowel(SuccessFailureState):
         #    return FAILURE
         if not GripUtils.grab_points(point_l=bl,roll_l=pi/2,yaw_l=-pi/2,pitch_l=pi/4,x_offset_l=0.01
                                     ,point_r=br,roll_r=-pi/2,yaw_r=pi/2,pitch_r=pi/4,x_offset_r=0.01,
-                                    y_offset_l=-0.01, y_offset_r=0.01,
+                                    y_offset_l=-0.01, y_offset_r=0.02,
                                     INIT_SCOOT_AMT = 0.01):
             return FAILURE
 
@@ -307,9 +333,9 @@ class Fold1(SuccessFailureState):
             return FAILURE
         '''
         #FIXME: For some reason large offsets required, #DEBUG
-        if not GripUtils.grab_points(pt_tl,roll_l=-pi/2,yaw_l=-pi/3,pitch_l=pi/4,x_offset_l=-0.07, z_offset_l=0.015
+        if not GripUtils.grab_points(pt_tl,roll_l=-pi/2,yaw_l=-pi/3,pitch_l=pi/4,x_offset_l=-0.06, z_offset_l=0.015
                                     ,point_r=pt_tr,roll_r=pi/2,yaw_r= pi/3,pitch_r=pi/4,x_offset_r=-0.06,
-                                    y_offset_r=0.01, y_offset_l=-0.035, z_offset_r=0.01):
+                                    y_offset_r=0.02, y_offset_l=-0.025, z_offset_r=0.01):
             return FAILURE
         (bl_x,bl_y,bl_z) = (pt_bl.point.x,pt_bl.point.y,pt_bl.point.z)
         (tl_x,tl_y,tl_z) = (pt_tl.point.x,pt_tl.point.y,pt_tl.point.z)
@@ -330,14 +356,14 @@ class Fold1(SuccessFailureState):
         frame_l=frame_r = pt_bl.header.frame_id
         if not GripUtils.go_to_multi (x_l=x_l,y_l=y_l,z_l=z_l,roll_l=roll_l,pitch_l=pitch_l,yaw_l=yaw_l,grip_l=grip_l,frame_l=frame_l
                                         ,x_r=x_r,y_r=y_r,z_r=z_r,roll_r=roll_r,pitch_r=pitch_r,yaw_r=yaw_r,grip_r=grip_r,frame_r=frame_r
-                                        ,dur=7.5):
+                                        ,dur=4.0):
             return_val = FAILURE
         print "Folding down!"
-        x_l = bl_x
-        y_l = bl_y-0.01 # bit too tight
+        x_l = bl_x + 0.02 # overshoots fold down
+        x_r = br_x + 0.02
+        y_l = bl_y-0.01
+        y_r = br_y+0.01
         z_l = z_r = bl_z + 0.02
-        x_r = br_x
-        y_r = br_y+0.01 # bit too tight
         yaw_l = -3*pi/4
         yaw_r = 3*pi/4
         pitch_l=pitch_r = pi/4
@@ -347,12 +373,146 @@ class Fold1(SuccessFailureState):
                                         ,x_r=x_r,y_r=y_r,z_r=z_r,roll_r=roll_r,pitch_r=pitch_r,yaw_r=yaw_r,grip_r=grip_r,frame_r=frame_r
                                         ,dur=7.5)
         GripUtils.recall_arm("b")
+        pr2_say(talk_pose2)
         return SUCCESS
 
-class Fold2(SuccessFailureState):
+class FoldLeft(SuccessFailureState):
+
     def __init__(self):
         SuccessFailureState.__init__(self,input_keys=["bl","tl","tr","br"])
+
+    def execute(self,userdata):
+        pt_bl = userdata.bl
+        pt_tl = userdata.tl
+        pt_br = userdata.br
+        pt_tr = userdata.tr
+        (bl_x,bl_y,bl_z) = (pt_bl.point.x,pt_bl.point.y,pt_bl.point.z)
+        (tl_x,tl_y,tl_z) = (pt_tl.point.x,pt_tl.point.y,pt_tl.point.z)
+        (br_x,br_y,br_z) = (pt_br.point.x,pt_br.point.y,pt_br.point.z)
+        (tr_x,tr_y,tr_z) = (pt_tr.point.x,pt_tr.point.y,pt_tr.point.z)
+
+        ctr_l_x = .75*bl_x + .25*tl_x
+        ctr_l_y = .75*bl_y + .25*tl_y
+        z = bl_z + 0.01 # bit too low
+        yaw = -pi/2
+        roll = -pi/2
+        pitch = pi/4
+        frame = pt_bl.header.frame_id
+
+        if not GripUtils.grab(x=ctr_l_x,y=ctr_l_y,z=z,roll=roll,yaw=yaw,pitch=pitch,arm="l",frame=frame):
+            GripUtils.open_gripper("l")
+            GripUtils.recall_arm("l")
+            return FAILURE
+
+        ctr_r_x = .75*br_x + .25*tr_x
+        ctr_r_y = .75*br_y + .25*tr_y
+        alpha = 0.333
+        ctr_ml_x = (1-alpha)*ctr_l_x + alpha*ctr_r_x
+        ctr_ml_y = (1-alpha)*ctr_l_y + alpha*ctr_r_y
+        ctr_mr_x = (1-alpha)*ctr_r_x + alpha*ctr_l_x
+        ctr_mr_y = (1-alpha)*ctr_r_y + alpha*ctr_l_y
+        up_z = z+sqrt( (ctr_l_x - ctr_r_x)**2 + (ctr_l_y - ctr_r_y)**2) / 3.0
+
+        pitch = pi/2
+        if not GripUtils.go_to(x=ctr_ml_x,y=ctr_ml_y,z=up_z,roll=roll,yaw=yaw,pitch=pitch,arm="l",frame=frame,grip=True,dur=5.0):
+            GripUtils.open_gripper("l")
+            GripUtils.recall_arm("l")
+            return FAILURE
+        if not GripUtils.go_to(x=(ctr_ml_x+ctr_mr_x)/2.0,y=(ctr_ml_y+ctr_mr_y+0.02)/2.0,z=(up_z+bl_z)/2.0,roll=roll,yaw=yaw,pitch=(pitch+3*pi/4)/2.0,arm="l",frame=frame,grip=True,dur=5.0):
+            GripUtils.open_gripper("l")
+            GripUtils.recall_arm("l")
+            return FAILURE
+        z = bl_z + 0.01 # bit too low
+        pitch = 3*pi/4
         
+        if not GripUtils.go_to(x=ctr_mr_x,y=ctr_mr_y+0.02,z=z,roll=roll,yaw=yaw,pitch=pitch,arm="l",frame=frame,grip=True,dur=5.0):
+            GripUtils.open_gripper("l")
+            GripUtils.recall_arm("l")
+            return FAILURE
+        yaw = pi/2
+        roll = pi/2
+        pitch = pi/4
+        GripUtils.open_gripper("l")
+        if not GripUtils.go_to(x=ctr_mr_x,y=ctr_mr_y-0.05,z=z+0.02,roll=roll,yaw=yaw,pitch=pitch,arm="l",frame=frame,grip=False,dur=1.0):
+            GripUtils.recall_arm("l")
+            return FAILURE
+        GripUtils.recall_arm("l")
+
+        return SUCCESS
+
+class FoldRight(SuccessFailureState):
+
+    def __init__(self):
+        SuccessFailureState.__init__(self,input_keys=["bl","tl","tr","br"])
+
+    def execute(self,userdata):
+        pt_bl = userdata.bl
+        pt_tl = userdata.tl
+        pt_br = userdata.br
+        pt_tr = userdata.tr
+        (bl_x,bl_y,bl_z) = (pt_bl.point.x,pt_bl.point.y,pt_bl.point.z)
+        (tl_x,tl_y,tl_z) = (pt_tl.point.x,pt_tl.point.y,pt_tl.point.z)
+        (br_x,br_y,br_z) = (pt_br.point.x,pt_br.point.y,pt_br.point.z)
+        (tr_x,tr_y,tr_z) = (pt_tr.point.x,pt_tr.point.y,pt_tr.point.z)
+
+        ctr_l_x = .75*bl_x + .25*tl_x
+        ctr_l_y = .75*bl_y + .25*tl_y
+        z = bl_z
+        yaw = -pi/2
+        roll = -pi/2
+        pitch = pi/4
+        frame = pt_bl.header.frame_id
+
+        ctr_r_x = .75*br_x + .25*tr_x
+        ctr_r_y = .75*br_y + .25*tr_y + 0.01 # bit too far right
+        alpha = 0.333
+        ctr_ml_x = (1-alpha)*ctr_l_x + alpha*ctr_r_x
+        ctr_ml_y = (1-alpha)*ctr_l_y + alpha*ctr_r_y
+        ctr_mr_x = (1-alpha)*ctr_r_x + alpha*ctr_l_x
+        ctr_mr_y = (1-alpha)*ctr_r_y + alpha*ctr_l_y
+        up_z = z+sqrt( (ctr_l_x - ctr_r_x)**2 + (ctr_l_y - ctr_r_y)**2) / 3.0
+
+        yaw = pi/2
+        roll = pi/2
+        pitch = pi/4
+
+        if not GripUtils.grab(x=ctr_r_x,y=ctr_r_y-0.01,z=z,roll=roll,yaw=yaw,pitch=pitch,arm="r",frame=frame):
+            GripUtils.open_gripper("r")
+            GripUtils.recall_arm("r")
+            return FAILURE
+        pitch = pi/2
+        if not GripUtils.go_to(x=ctr_mr_x,y=ctr_mr_y-0.02,z=up_z,roll=roll,yaw=yaw,pitch=pitch,arm="r",frame=frame,grip=True,dur=5.0):
+            GripUtils.open_gripper("r")
+            GripUtils.recall_arm("r")
+            return FAILURE
+
+        if not GripUtils.go_to(x=(ctr_mr_x+ctr_ml_x)/2.0,y=(ctr_mr_y-0.02+ctr_ml_y-0.02)/2.0,z=(up_z+bl_z+0.01)/2.0,roll=roll,yaw=yaw,pitch=(pitch+3*pi/4)/2.0,arm="r",frame=frame,grip=True,dur=5.0):
+            GripUtils.open_gripper("r")
+            GripUtils.recall_arm("r")
+            return FAILURE
+        z = bl_z+0.01
+        pitch = 3*pi/4
+        
+        if not GripUtils.go_to(x=ctr_ml_x,y=ctr_ml_y-0.02,z=z,roll=roll,yaw=yaw,pitch=pitch,arm="r",frame=frame,grip=True,dur=5.0):
+            GripUtils.open_gripper("r")
+            GripUtils.recall_arm("r")
+            return FAILURE
+        GripUtils.open_gripper("r")
+        if not GripUtils.go_to(x=ctr_ml_x,y=ctr_ml_y+0.06,z=z+0.02,roll=roll,yaw=yaw,pitch=pitch,arm="r",frame=frame,grip=False,dur=1.0):
+            GripUtils.recall_arm("r")
+            return FAILURE
+        GripUtils.recall_arm("r")
+        pr2_say(talk_done)
+        return SUCCESS
+
+class Fold2(NestedStateMachine):
+    def __init__(self,title=None,transitions=None):
+        NestedStateMachine.__init__(self, title, transitions=transitions,outcomes=DEFAULT_OUTCOMES,input_keys=["bl","tl","tr","br"])
+        self.add('Fold_Left', FoldLeft(), {SUCCESS:'Fold_Right', FAILURE:'Fold_Right'})
+        self.add('Fold_Right', FoldRight(), {SUCCESS:SUCCESS, FAILURE:FAILURE})
+
+        
+'''
     def execute(self,userdata):
         pt_bl = userdata.bl
         pt_tl = userdata.tl
@@ -416,6 +576,7 @@ class Fold2(SuccessFailureState):
         GripUtils.recall_arm("r")
         
         return SUCCESS
+'''
 
 class GenericUserData:
     def __init__(self):
