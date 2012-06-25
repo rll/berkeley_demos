@@ -16,6 +16,7 @@ if __name__ == '__main__':
     rate = rospy.Rate(1000.0)
     table_height = rospy.get_param("table_height",1.0)
     while not rospy.is_shutdown():
+       table_height = rospy.get_param("table_height",1.0)
        br.sendTransform((0.0, 0.0, table_height),
                         (0.0, 0.0, 0.0, 1.0),
                         rospy.Time.now(),

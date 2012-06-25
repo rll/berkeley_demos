@@ -1,0 +1,20 @@
+<package>
+  <description brief="table_detect">
+
+     table_detect
+
+  </description>
+  <author>Ziang Xie</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/table_detect</url>
+  <depend package="roscpp"/>
+  <depend package="sensor_msgs"/>
+  <depend package="pcl"/>
+  <depend package="pcl_ros"/>
+  <depend package="tf"/>
+  <depend package="geometry_msgs"/>
+
+</package>
+
+

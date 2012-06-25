@@ -1,0 +1,8 @@
+<launch>
+    <!-- Start up xtion -->
+    <include file="$(find openni_camera)/launch/openni_node.launch" />
+    <node pkg="table_detect" type="table_coeffs" name="table_detect_node" output="screen">
+    </node>
+    <node pkg="table_detect" type="table_height.py" name="table_height_node" output="screen">
+    </node>
+</launch>

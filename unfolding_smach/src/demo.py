@@ -179,7 +179,7 @@ class TriangleToRectangle(NestedStateMachine):
         NestedStateMachine.__init__(self,title,transitions=transitions,outcomes=DEFAULT_OUTCOMES)
         self.add('Grab_Triangle', GrabTriangle(), {SUCCESS:'Shake_Towel', FAILURE: FAILURE})
         self.add('Shake_Towel',ShakeBothArms(1,violent=False),{SUCCESS:'Layout_Towel',FAILURE:'Layout_Towel'})
-        self.add('Layout_Towel',SpreadOut(0.5),{SUCCESS:SUCCESS,FAILURE:FAILURE}) #was 0.43
+        self.add('Layout_Towel',SpreadOut(0.53),{SUCCESS:SUCCESS,FAILURE:FAILURE}) #was 0.43
 
 class GrabTriangle(SuccessFailureState):
     def __init__(self):
@@ -246,7 +246,7 @@ class FlipTowel(NestedStateMachine):
         NestedStateMachine.__init__(self,title,transitions=transitions,outcomes=DEFAULT_OUTCOMES,input_keys=["bl","tl","tr","br"])
         #self.add('Detect_Towel', DetectTowel(), {SUCCESS:'Pickup_Towel', FAILURE:FAILURE})
         self.add('Pickup_Towel', PickupTowel(), {SUCCESS:'Layout_Towel', FAILURE:FAILURE})
-        self.add('Layout_Towel', SpreadOut(0.42,recall=True),{SUCCESS:SUCCESS,FAILURE:FAILURE})        
+        self.add('Layout_Towel', SpreadOut(0.47,recall=True),{SUCCESS:SUCCESS,FAILURE:FAILURE})        
 
         
 class DetectTowel(SuccessFailureState):
